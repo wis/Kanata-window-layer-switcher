@@ -2,11 +2,11 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use simplelog::*;
 
+use active_win_pos_rs::get_active_window;
 use std::io::{stdin, Read, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::str::FromStr;
 use std::time::Duration;
-use active_win_pos_rs::get_active_window;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -34,9 +34,7 @@ fn main() {
     )
     .expect("connect to kanata");
     log::info!("successfully connected");
-    let writer_stream = kanata_conn
-        .try_clone()
-        .expect("clone writer");
+    let writer_stream = kanata_conn.try_clone().expect("clone writer");
     let reader_stream = kanata_conn;
     std::thread::spawn(move || write_to_kanata(writer_stream));
     read_from_kanata(reader_stream);
@@ -112,25 +110,31 @@ fn read_from_kanata(mut s: TcpStream) {
         match parsed_msg {
             ServerMessage::LayerChange { new } => {
                 log::info!("reader: kanata changed layers to \"{new}\"");
-                if new == "window-layer-switch" { 
-    match get_active_window() {
-        Ok(active_window) => {
-            println!("active window: {:#?}", active_window);
-            println!("active window name: {:#?}", active_window.app_name);
+                if new == "window-layer-switch" {
+                    match get_active_window() {
+                        Ok(active_window) => {
+                            println!("active window: {:#?}", active_window);
+                            println!("active window name: {:#?}", active_window.app_name);
 
-        let new_layer = active_window.app_name.trim_end().replace(" ", "-").to_owned();
-        let msg =
-            serde_json::to_string(&ClientMessage::ChangeLayer { new: new_layer }).expect("deserializable");
-        let expected_wsz = msg.len();
-        let wsz = s.write(msg.as_bytes()).expect("stream writable");
-        if wsz != expected_wsz {
-            panic!("failed to write entire message {wsz} {expected_wsz}");
-        }
-        }
-        Err(()) => {
-            println!("error occurred while getting the active window");
-        }
-    }
+                            let new_layer = active_window
+                                .app_name
+                                .trim_end()
+                                .replace(" ", "-")
+                                .to_owned();
+                            let msg = serde_json::to_string(&ClientMessage::ChangeLayer {
+                                new: new_layer,
+                            })
+                            .expect("deserializable");
+                            let expected_wsz = msg.len();
+                            let wsz = s.write(msg.as_bytes()).expect("stream writable");
+                            if wsz != expected_wsz {
+                                panic!("failed to write entire message {wsz} {expected_wsz}");
+                            }
+                        }
+                        Err(()) => {
+                            println!("error occurred while getting the active window");
+                        }
+                    }
                 }
             }
         }
