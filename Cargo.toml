@@ -1,6 +1,6 @@
 [package]
 name = "kanata_window_layer_switcher"
-Description = "Kanata TCP client that listenes for a LayerChange event to a special layer name, and then sends a ChangeLayer command to Kanata to switch layer based on active window's name."
+Description = "a TCP client for Kanata that listenes for a LayerChange event to a specific layer name, and then sends a ChangeLayer command to Kanata to switch layer based on active window's name."
 version = "1.0.0"
 edition = "2021"
 license = "LGPL-3.0"
